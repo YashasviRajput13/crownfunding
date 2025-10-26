@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title CrowdChain
+ * @title CrowdChain - Crowdfunding
  * @dev A decentralized crowdfunding platform smart contract
  */
-contract Project {
+contract Crowdfunding {
     
     struct Campaign {
         address payable creator;
@@ -176,5 +176,72 @@ contract Project {
     function getContribution(uint256 _campaignId, address _contributor) public view returns (uint256) {
         require(_campaignId < campaignCount, "Campaign does not exist");
         return campaigns[_campaignId].contributions[_contributor];
+    }
+    
+    /**
+     * @dev Extend campaign deadline (only by creator)
+     * @param _campaignId ID of the campaign
+     * @param _additionalDays Number of additional days to extend
+     */
+    function extendDeadline(uint256 _campaignId, uint256 _additionalDays) public {
+        require(_campaignId < campaignCount, "Campaign does not exist");
+        Campaign storage campaign = campaigns[_campaignId];
+        
+        require(msg.sender == campaign.creator, "Only creator can extend deadline");
+        require(!campaign.finalized, "Campaign already finalized");
+        require(_additionalDays > 0, "Extension must be greater than 0");
+        require(block.timestamp < campaign.deadline, "Campaign already ended");
+        
+        campaign.deadline += (_additionalDays * 1 days);
+        
+        emit CampaignCreated(
+            _campaignId,
+            campaign.creator,
+            campaign.title,
+            campaign.goalAmount,
+            campaign.deadline
+        );
+    }
+    
+    /**
+     * @dev Get all active campaigns (not finalized and deadline not passed)
+     * @return activeIds Array of active campaign IDs
+     * @return activeTitles Array of active campaign titles
+     * @return activeGoals Array of active campaign goal amounts
+     * @return activeRaised Array of active campaign raised amounts
+     */
+    function getActiveCampaigns() public view returns (
+        uint256[] memory activeIds,
+        string[] memory activeTitles,
+        uint256[] memory activeGoals,
+        uint256[] memory activeRaised
+    ) {
+        // First pass: count active campaigns
+        uint256 activeCount = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (!campaigns[i].finalized && block.timestamp < campaigns[i].deadline) {
+                activeCount++;
+            }
+        }
+        
+        // Initialize arrays
+        activeIds = new uint256[](activeCount);
+        activeTitles = new string[](activeCount);
+        activeGoals = new uint256[](activeCount);
+        activeRaised = new uint256[](activeCount);
+        
+        // Second pass: populate arrays
+        uint256 index = 0;
+        for (uint256 i = 0; i < campaignCount; i++) {
+            if (!campaigns[i].finalized && block.timestamp < campaigns[i].deadline) {
+                activeIds[index] = i;
+                activeTitles[index] = campaigns[i].title;
+                activeGoals[index] = campaigns[i].goalAmount;
+                activeRaised[index] = campaigns[i].raisedAmount;
+                index++;
+            }
+        }
+        
+        return (activeIds, activeTitles, activeGoals, activeRaised);
     }
 }
