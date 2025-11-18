@@ -202,9 +202,6 @@ User → Frontend (React/Next.js) → RPC Provider → CrowdChain Smart Contract
 Mainnet/Testnet Contract:
 👉 0x13fc17D677Ce34D5e734DE94ac4Fc8a24a2b9489
 
-(Replace when redeployed)
-
-
 ---
 
 🛠 Tech Stack
